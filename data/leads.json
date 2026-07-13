@@ -1,0 +1,90 @@
+[
+  {
+    "lead_id": "L001",
+    "name": "Ramesh Patel",
+    "monthly_income": 65000,
+    "existing_emi": 8000,
+    "employment_type": "salaried_govt",
+    "repayment_history": "good",
+    "requested_loan_amount": 500000,
+    "tenure_months": 36,
+    "relationship_years": 4
+  },
+  {
+    "lead_id": "L002",
+    "name": "Sunita Sharma",
+    "monthly_income": 32000,
+    "existing_emi": 15000,
+    "employment_type": "salaried_private",
+    "repayment_history": "average",
+    "requested_loan_amount": 300000,
+    "tenure_months": 24,
+    "relationship_years": 1
+  },
+  {
+    "lead_id": "L003",
+    "name": "Vikram Desai",
+    "monthly_income": 90000,
+    "existing_emi": 12000,
+    "employment_type": "business_owner",
+    "repayment_history": "poor",
+    "requested_loan_amount": 800000,
+    "tenure_months": 48,
+    "relationship_years": 0
+  },
+  {
+    "lead_id": "L004",
+    "name": "Anjali Mehta",
+    "monthly_income": 48000,
+    "existing_emi": 5000,
+    "employment_type": "salaried_private",
+    "repayment_history": "good",
+    "requested_loan_amount": 200000,
+    "tenure_months": 12,
+    "relationship_years": 3
+  },
+  {
+    "lead_id": "L005",
+    "name": "Firoz Khan",
+    "monthly_income": 25000,
+    "existing_emi": 18000,
+    "employment_type": "self_employed",
+    "repayment_history": "none",
+    "requested_loan_amount": 150000,
+    "tenure_months": 24,
+    "relationship_years": 0
+  },
+  {
+    "lead_id": "L006",
+    "name": "Priya Nair",
+    "monthly_income": 110000,
+    "existing_emi": 10000,
+    "employment_type": "salaried_govt",
+    "repayment_history": "good",
+    "requested_loan_amount": 1000000,
+    "tenure_months": 60,
+    "relationship_years": 6
+  },
+  {
+    "lead_id": "L007",
+    "name": "Deepak Joshi",
+    "monthly_income": 40000,
+    "existing_emi": 22000,
+    "employment_type": "self_employed",
+    "repayment_history": "average",
+    "requested_loan_amount": 250000,
+    "tenure_months": 24,
+    "relationship_years": 2
+  },
+  {
+    "lead_id": "L008",
+    "name": "Meena Iyer",
+    "monthly_income": 55000,
+    "existing_emi": 3000,
+    "employment_type": "salaried_private",
+    "repayment_history": "good",
+    "requested_loan_amount": 400000,
+    "tenure_months": 36,
+    "relationship_years": 5
+  }
+]

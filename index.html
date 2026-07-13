@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<title>Prospect Assist AI - Green Galaxy</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<style>
+  :root {
+    --navy: #0B2545;
+    --teal: #0F4C3A;
+    --gold: #C87F0A;
+    --bg: #F7F8FA;
+    --card: #FFFFFF;
+    --text: #1A1A1A;
+    --muted: #6B7280;
+    --low: #0F4C3A;
+    --medium: #C87F0A;
+    --high: #9B1C1C;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0;
+    font-family: Calibri, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+  }
+  header {
+    background: var(--navy);
+    color: white;
+    padding: 20px 32px;
+  }
+  header h1 { margin: 0; font-size: 22px; }
+  header p { margin: 4px 0 0; color: #C9D6E3; font-size: 13px; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    padding: 24px 32px;
+    max-width: 1200px;
+    margin: 0 auto;
+  }
+  @media (max-width: 800px) {
+    .layout { grid-template-columns: 1fr; }
+  }
+
+  .lead-list { display: flex; flex-direction: column; gap: 10px; }
+  .lead-card {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 14px 16px;
+    cursor: pointer;
+    border: 2px solid transparent;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .lead-card:hover { border-color: var(--navy); }
+  .lead-card.active { border-color: var(--gold); }
+  .lead-card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  .lead-name { font-weight: bold; font-size: 15px; }
+  .score { font-size: 18px; font-weight: bold; }
+  .band {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 12px;
+    color: white;
+    margin-top: 6px;
+  }
+  .band.Low { background: var(--low); }
+  .band.Medium { background: var(--medium); }
+  .band.High { background: var(--high); }
+
+  .detail {
+    background: var(--card);
+    border-radius: 10px;
+    padding: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    min-height: 300px;
+  }
+  .detail h2 { margin-top: 0; }
+  .breakdown-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 8px;
+    font-size: 13px;
+  }
+  .breakdown-label { width: 160px; color: var(--muted); }
+  .bar-track { flex: 1; background: #E8EAED; border-radius: 6px; height: 10px; overflow: hidden; }
+  .bar-fill { height: 100%; background: var(--teal); }
+  .breakdown-score { width: 50px; text-align: right; font-weight: bold; }
+
+  .ai-box {
+    background: #FBF4E9;
+    border-left: 4px solid var(--gold);
+    padding: 14px 16px;
+    border-radius: 6px;
+    margin-top: 18px;
+    font-size: 14px;
+  }
+  .ai-box h3 { margin: 0 0 8px; font-size: 14px; color: var(--gold); }
+  .tag-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .tag { background: white; border: 1px solid #DDD; border-radius: 6px; padding: 3px 8px; font-size: 12px; }
+  .action-badge {
+    display: inline-block;
+    margin-top: 10px;
+    background: var(--navy);
+    color: white;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-size: 13px;
+    font-weight: bold;
+  }
+  .empty-state { color: var(--muted); text-align: center; padding: 60px 20px; }
+  .loading { color: var(--muted); padding: 20px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Prospect Assist AI</h1>
+  <p>Team Green Galaxy — IDBI Innovate 2026 — Explainable Lead Scoring & Recommendation</p>
+</header>
+
+<div class="layout">
+  <div class="lead-list" id="leadList">
+    <div class="loading">Loading leads...</div>
+  </div>
+  <div class="detail" id="detail">
+    <div class="empty-state">Select a lead from the list to view AI-generated reasoning and recommended action.</div>
+  </div>
+</div>
+
+<script>
+  // Point this at your deployed backend, e.g. "https://your-app.onrender.com"
+  const API_BASE = "http://localhost:8000";
+
+  let leads = [];
+  let activeId = null;
+
+  async function loadLeads() {
+    try {
+      const res = await fetch(`${API_BASE}/api/leads`);
+      leads = await res.json();
+      renderList();
+      if (leads.length) selectLead(leads[0].lead_id);
+    } catch (e) {
+      document.getElementById("leadList").innerHTML =
+        `<div class="loading">Could not reach backend at ${API_BASE}. Check API_BASE and that the server is running.</div>`;
+    }
+  }
+
+  function renderList() {
+    const container = document.getElementById("leadList");
+    container.innerHTML = leads.map(lead => `
+      <div class="lead-card ${lead.lead_id === activeId ? 'active' : ''}" onclick="selectLead('${lead.lead_id}')">
+        <div class="lead-card-top">
+          <span class="lead-name">${lead.name}</span>
+          <span class="score">${lead.total_score}</span>
+        </div>
+        <span class="band ${lead.risk_band.split(' ')[0]}">${lead.risk_band}</span>
+      </div>
+    `).join("");
+  }
+
+  function selectLead(id) {
+    activeId = id;
+    renderList();
+    const lead = leads.find(l => l.lead_id === id);
+    if (!lead) return;
+
+    const rows = Object.entries(lead.breakdown).map(([key, val]) => `
+      <div class="breakdown-row">
+        <div class="breakdown-label">${key.replace(/_/g, ' ')}</div>
+        <div class="bar-track"><div class="bar-fill" style="width:${(val.score/val.max)*100}%"></div></div>
+        <div class="breakdown-score">${val.score}/${val.max}</div>
+      </div>
+    `).join("");
+
+    const r = lead.reasoning;
+    document.getElementById("detail").innerHTML = `
+      <h2>${lead.name} <span style="font-weight:normal; color:var(--muted); font-size:14px;">(${lead.lead_id})</span></h2>
+      <div class="breakdown-row" style="margin-bottom:16px;">
+        <strong>Total Score: ${lead.total_score} / 100 — ${lead.risk_band}</strong>
+      </div>
+      ${rows}
+      <div class="ai-box">
+        <h3>AI Reasoning</h3>
+        <p>${r.explanation}</p>
+        <strong>Strengths:</strong>
+        <div class="tag-list">${r.key_strengths.map(s => `<span class="tag">${s}</span>`).join("")}</div>
+        <strong style="display:block; margin-top:8px;">Risks:</strong>
+        <div class="tag-list">${r.key_risks.map(s => `<span class="tag">${s}</span>`).join("")}</div>
+        <div class="action-badge">${r.recommended_action}</div>
+        <p style="margin-top:8px; color:var(--muted); font-size:13px;">${r.action_rationale}</p>
+      </div>
+    `;
+  }
+
+  loadLeads();
+</script>
+
+</body>
+</html>
