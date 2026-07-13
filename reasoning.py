@@ -52,7 +52,8 @@ Generate the explanation, strengths, risks, and recommended action as per your i
 
 def get_reasoning(scored_lead: dict, api_key: str = None) -> dict:
     """Calls Claude API. Falls back to a rule-based stub if no API key is set,
-    so the pipeline is demoable even without live API access."""
+    OR if the API call fails/returns something unparseable for any reason,
+    so the pipeline never crashes the endpoint mid-demo."""
     api_key = api_key or os.environ.get("ANTHROPIC_API_KEY")
 
     if not api_key:
@@ -70,21 +71,58 @@ def get_reasoning(scored_lead: dict, api_key: str = None) -> dict:
         "messages": [{"role": "user", "content": build_user_prompt(scored_lead)}],
     }
 
-    response = requests.post(ANTHROPIC_API_URL, headers=headers, json=payload, timeout=30)
-    response.raise_for_status()
-    text = response.json()["content"][0]["text"]
-
     try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        # defensive: strip accidental markdown fences before giving up
-        cleaned = text.strip().strip("```json").strip("```").strip()
-        return json.loads(cleaned)
+        response = requests.post(ANTHROPIC_API_URL, headers=headers, json=payload, timeout=30)
+        response.raise_for_status()
+        text = response.json()["content"][0]["text"]
+        result = _parse_json_response(text)
+        return _validate_and_clean(result, scored_lead)
+
+    except Exception as e:
+        # Any failure (network, API error, bad JSON, missing keys) -> safe fallback.
+        # Logs to Render's Logs tab so you can see it happened, but never crashes the request.
+        print(f"[reasoning.py] get_reasoning failed, using fallback: {e}")
+        return _fallback_reasoning(scored_lead)
+
+
+def _parse_json_response(text: str) -> dict:
+    """Parses Claude's JSON output, tolerating accidental markdown fences."""
+    cleaned = text.strip()
+    if cleaned.startswith("```"):
+        # Remove a leading ```json or ``` line, and a trailing ``` line
+        lines = cleaned.split("\n")
+        if lines[0].startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        cleaned = "\n".join(lines).strip()
+    return json.loads(cleaned)
+
+
+def _validate_and_clean(result: dict, scored_lead: dict) -> dict:
+    """Enforces the contract: recommended_action must be one of the allowed values.
+    If Claude ever returns something outside the fixed list, we don't trust it -
+    fall back to the deterministic action instead."""
+    required_keys = {"explanation", "key_strengths", "key_risks", "recommended_action", "action_rationale"}
+    if not required_keys.issubset(result.keys()):
+        raise ValueError(f"Missing required keys in reasoning response: {result}")
+
+    if result["recommended_action"] not in ALLOWED_ACTIONS:
+        band = scored_lead["risk_band"]
+        action_map = {
+            "Low Risk": "Prioritize - Immediate Outreach",
+            "Medium Risk": "Standard Follow-up",
+            "High Risk": "Deprioritize - High Risk",
+        }
+        result["recommended_action"] = action_map.get(band, "Standard Follow-up")
+        result["action_rationale"] += " (action corrected to match fixed policy list)"
+
+    return result
 
 
 def _fallback_reasoning(scored_lead: dict) -> dict:
-    """Deterministic stub used only if no API key is configured -
-    keeps the demo runnable offline, e.g. during rehearsal without burning API calls."""
+    """Deterministic stub used if no API key is configured, or if the live call
+    fails for any reason - keeps the demo runnable even if the API hiccups."""
     band = scored_lead["risk_band"]
     breakdown = scored_lead["breakdown"]
 
